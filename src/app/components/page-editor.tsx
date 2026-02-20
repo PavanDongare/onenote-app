@@ -58,21 +58,6 @@ export function PageEditor() {
   const handleMount = useCallback((editor: Editor) => {
     editorRef.current = editor
 
-    const page = useNotesStore.getState().currentPage
-    if (page?.content) {
-      currentPageIdRef.current = page.id
-      isSavingRef.current = true
-      try {
-        const snapshot = JSON.parse(page.content) as TLEditorSnapshot
-        loadSnapshot(editor.store, snapshot)
-      } catch (error) {
-        console.error('Failed to load initial content:', error)
-      }
-      requestAnimationFrame(() => {
-        isSavingRef.current = false
-      })
-    }
-
     const unsubscribe = editor.store.listen(
       () => {
         if (isSavingRef.current) return
@@ -87,6 +72,33 @@ export function PageEditor() {
 
     return () => unsubscribe()
   }, [debouncedSave])
+
+  // Load page content when currentPage changes
+  useEffect(() => {
+    const editor = editorRef.current
+    if (!editor) return
+
+    const page = currentPage
+    if (!page) return
+
+    // Only reload if we're switching to a different page
+    if (currentPageIdRef.current !== page.id && page.content) {
+      currentPageIdRef.current = page.id
+      isSavingRef.current = true
+      try {
+        const snapshot = JSON.parse(page.content) as TLEditorSnapshot
+        loadSnapshot(editor.store, snapshot)
+      } catch (error) {
+        console.error('Failed to load page content:', error)
+        // Clear editor on error
+        editor.createShapes([])
+        editor.selectNone()
+      }
+      requestAnimationFrame(() => {
+        isSavingRef.current = false
+      })
+    }
+  }, [currentPage])
 
   if (!currentPageId || !currentPage) {
     return (
@@ -126,7 +138,7 @@ export function PageEditor() {
 
       <div className="flex-1 relative">
         <div className="absolute inset-0">
-          <Tldraw key={currentPage.id} onMount={handleMount} components={{ PageMenu: null }} />
+          <Tldraw onMount={handleMount} components={{ PageMenu: null }} />
         </div>
       </div>
     </div>
