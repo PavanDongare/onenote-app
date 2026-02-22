@@ -1,21 +1,15 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import { TenantProvider } from "@/lib/auth/tenant-context";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "OneNote",
   description: "Canvas-based note-taking app",
+  icons: {
+    icon: "/triangle.svg",
+    shortcut: "/triangle.svg",
+    apple: "/triangle.svg",
+  },
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -38,9 +32,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen overflow-hidden`}
-      >
+      <body className="antialiased h-screen overflow-hidden">
         <TenantProvider value={{ userId: '00000000-0000-0000-0000-000000000002', tenantId: '00000000-0000-0000-0000-000000000001', isAdmin: false }}>
           <main className="h-screen overflow-hidden">
             {children}

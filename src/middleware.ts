@@ -5,10 +5,7 @@ export async function middleware(request: NextRequest) {
   const { supabaseResponse, user } = await updateSession(request)
 
   // Protected paths require authentication
-  const protectedPaths = ['/dms', '/onenote', '/metaflow']
-  const isProtected = protectedPaths.some(p =>
-    request.nextUrl.pathname.startsWith(p)
-  )
+  const isProtected = !request.nextUrl.pathname.startsWith('/auth')
 
   if (isProtected && !user) {
     const url = new URL('/auth/login', request.url)

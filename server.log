@@ -1,0 +1,10 @@
+
+> platform@0.1.0 start
+> next start -p 3004
+
+▲ Next.js 16.1.1
+- Local:         http://localhost:3004
+- Network:       http://192.168.0.39:3004
+
+✓ Starting...
+✓ Ready in 175ms

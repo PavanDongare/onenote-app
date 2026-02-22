@@ -1,17 +1,13 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
-import dynamic from 'next/dynamic'
 import { Input } from '@/components/ui/input'
 import { useNotesStore } from '../lib/notes-store'
 import { useDebouncedCallback } from 'use-debounce'
-import { Editor, getSnapshot, loadSnapshot, TLEditorSnapshot } from 'tldraw'
+import { Tldraw, getSnapshot, loadSnapshot } from 'tldraw'
+import type { Editor, TLEditorSnapshot } from 'tldraw'
 import { updatePageContent as savePageContentToDB } from '../lib/queries/pages'
 import 'tldraw/tldraw.css'
-
-const Tldraw = dynamic(() => import('tldraw').then((mod) => mod.Tldraw), {
-  ssr: false,
-})
 
 export function PageEditor() {
   const { currentPage, currentPageId, updatePageTitle, isLoadingPage } = useNotesStore()
