@@ -29,7 +29,7 @@ export async function signIn(formData: FormData) {
   console.log('Proto:', proto)
   console.log('Referer:', referer)
   console.log('Final Origin:', origin)
-  console.log('Redirect URL:', `${getURL(origin)}auth/callback`)
+  console.log('Redirect URL:', `${getURL(origin)}/auth/callback`)
   console.log('------------------')
 
   const email = formData.get('email') as string
@@ -37,7 +37,7 @@ export async function signIn(formData: FormData) {
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: `${getURL(origin)}auth/callback`,
+      emailRedirectTo: `${getURL(origin)}/auth/callback`,
     },
   })
 
