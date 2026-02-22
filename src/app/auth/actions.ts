@@ -9,14 +9,26 @@ import { getURL } from '@/lib/utils'
 export async function signIn(formData: FormData) {
   const supabase = await createClient()
   const headerList = await headers()
-  const host = headerList.get('x-forwarded-host') || headerList.get('host') || ''
-  const proto = headerList.get('x-forwarded-proto') || 'http'
-  const origin = host ? `${proto}://${host}` : ''
+  const host = headerList.get('x-forwarded-host') || headerList.get('host')
+  const proto = headerList.get('x-forwarded-proto') || 'https'
+  const referer = headerList.get('referer')
+  
+  let origin = host ? `${proto}://${host}` : ''
+  
+  if (!origin && referer) {
+    try {
+      const refererUrl = new URL(referer)
+      origin = refererUrl.origin
+    } catch (e) {
+      // ignore
+    }
+  }
 
   console.log('--- Auth Debug ---')
   console.log('Host:', host)
   console.log('Proto:', proto)
-  console.log('Origin:', origin)
+  console.log('Referer:', referer)
+  console.log('Final Origin:', origin)
   console.log('Redirect URL:', `${getURL(origin)}auth/callback`)
   console.log('------------------')
 
