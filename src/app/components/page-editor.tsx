@@ -9,36 +9,40 @@ import type { Editor, TLEditorSnapshot } from 'tldraw'
 import 'tldraw/tldraw.css'
 
 export function PageEditor() {
-  const { currentPage, currentPageId, updatePageTitle, updatePageContent, isLoadingPage } = useNotesStore()
+  const currentPage = useNotesStore(s => s.currentPage)
+  const currentPageId = useNotesStore(s => s.currentPageId)
+  const updatePageTitle = useNotesStore(s => s.updatePageTitle)
+  const updatePageContent = useNotesStore(s => s.updatePageContent)
+  const isLoadingPage = useNotesStore(s => s.isLoadingPage)
 
   const [title, setTitle] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const editorRef = useRef<Editor | null>(null)
   const currentPageIdRef = useRef<string | null>(null)
-  const isSavingRef = useRef(false)
+  const isInitialLoadRef = useRef(false)
 
   useEffect(() => {
     if (currentPage) {
       setTitle(currentPage.title)
     }
-  }, [currentPage])
+  }, [currentPage?.title]) // Only sync title when it changes
 
   const debouncedSave = useDebouncedCallback(async (pageId: string, data: string) => {
     setIsSaving(true)
     try {
       await updatePageContent(pageId, data)
     } catch (error) {
-      console.error('Failed to save:', error)
+      console.error('PageEditor: Failed to save:', error)
     } finally {
       setIsSaving(false)
     }
-  }, 500)
+  }, 1000) // Increase debounce to 1s for safety
 
   const debouncedSaveTitle = useDebouncedCallback(async (pageId: string, newTitle: string) => {
     try {
       await updatePageTitle(pageId, newTitle)
     } catch (error) {
-      console.error('Failed to save title:', error)
+      console.error('PageEditor: Failed to save title:', error)
     }
   }, 500)
 
@@ -51,25 +55,16 @@ export function PageEditor() {
   }
 
   const handleMount = useCallback((editor: Editor) => {
-    console.log('PageEditor: Editor mounted')
     editorRef.current = editor
 
     const unsubscribe = editor.store.listen(
       (change) => {
-        if (isSavingRef.current) {
-          console.log('PageEditor: Ignoring change because isSavingRef is true')
-          return
-        }
-        
-        // Check if the change actually came from a user action
+        if (isInitialLoadRef.current) return
         if (change.source !== 'user') return
 
         const pageId = useNotesStore.getState().currentPageId
-        console.log('PageEditor: Store changed by user, pageId:', pageId)
-        
         if (pageId) {
           const snapshot = getSnapshot(editor.store)
-          console.log('PageEditor: Triggering debouncedSave for pageId:', pageId)
           debouncedSave(pageId, JSON.stringify(snapshot))
         }
       },
@@ -77,51 +72,45 @@ export function PageEditor() {
     )
 
     return () => {
-      console.log('PageEditor: Editor unmounting, unsubscribing from store')
       unsubscribe()
     }
   }, [debouncedSave])
 
-  // Load page content when currentPage changes
+  // Load page content when page selection changes
   useEffect(() => {
     const editor = editorRef.current
-    if (!editor) return
+    if (!editor || !currentPage) return
 
-    const page = currentPage
-    if (!page) {
-      console.log('PageEditor: No current page')
-      return
-    }
-
-    // Only reload if we're switching to a different page
-    if (currentPageIdRef.current !== page.id) {
-      console.log('PageEditor: Loading content for page', page.id, 'title:', page.title)
-      currentPageIdRef.current = page.id
-      isSavingRef.current = true
+    // CRITICAL: Only reload if the page ID has changed (switching pages)
+    // or if we haven't loaded anything yet.
+    // Do NOT reload if only the 'content' changed in the store (which happens after every save).
+    if (currentPageIdRef.current !== currentPage.id) {
+      currentPageIdRef.current = currentPage.id
+      isInitialLoadRef.current = true
       
-      if (page.content) {
+      if (currentPage.content) {
         try {
-          const snapshot = JSON.parse(page.content) as TLEditorSnapshot
-          console.log('PageEditor: Snapshot parsed, loading into editor')
+          const snapshot = JSON.parse(currentPage.content) as TLEditorSnapshot
           loadSnapshot(editor.store, snapshot)
         } catch (error) {
-          console.error('PageEditor: Failed to parse/load page content:', error)
-          editor.createShapes([])
-          editor.selectNone()
+          console.error('PageEditor: Failed to load snapshot:', error)
+          // Fallback: clear only shapes if load fails
+          const shapeIds = Array.from(editor.getCurrentPageShapeIds())
+          if (shapeIds.length > 0) editor.deleteShapes(shapeIds)
         }
       } else {
-        console.log('PageEditor: Page has no content, clearing editor')
-        editor.store.clear()
-        editor.createShapes([])
-        editor.selectNone()
+        // Safe way to clear current page shapes
+        const shapeIds = Array.from(editor.getCurrentPageShapeIds())
+        if (shapeIds.length > 0) editor.deleteShapes(shapeIds)
       }
       
-      requestAnimationFrame(() => {
-        isSavingRef.current = false
-        console.log('PageEditor: Loading complete, isSavingRef reset to false')
-      })
+      // Delay disabling initial load protection to ensure tldraw's internal
+      // update cycle from loadSnapshot is complete.
+      setTimeout(() => {
+        isInitialLoadRef.current = false
+      }, 500)
     }
-  }, [currentPage])
+  }, [currentPage?.id]) // ONLY depend on the ID, not the full object
 
   if (!currentPageId || !currentPage) {
     return (

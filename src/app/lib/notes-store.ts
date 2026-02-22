@@ -88,6 +88,9 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
   },
 
   initialize: async () => {
+    const { currentNotebookId } = get()
+    if (currentNotebookId) return // Already initialized
+
     await get().loadNotebooks()
     const { notebooks } = get()
     if (notebooks.length > 0) {
@@ -207,13 +210,22 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
   },
 
   updatePageContent: async (pageId: string, content: string) => {
-    console.log('NotesStore: Updating page content for pageId:', pageId)
     try {
       await updatePageContentQuery(pageId, content)
-      const { currentPage } = get()
+      
+      const { currentPage, pages } = get()
+      
+      // Update the pages list in store
+      const updatedPages = pages.map(p => p.id === pageId ? { ...p, content } : p)
+      
+      // Update current page if it matches
       if (currentPage && currentPage.id === pageId) {
-        set({ currentPage: { ...currentPage, content } })
-        console.log('NotesStore: Local state updated for current page')
+        set({ 
+          pages: updatedPages,
+          currentPage: { ...currentPage, content } 
+        })
+      } else {
+        set({ pages: updatedPages })
       }
     } catch (error) {
       console.error('NotesStore: Failed to update page content:', error)
