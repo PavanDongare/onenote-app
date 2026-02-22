@@ -17,7 +17,7 @@ export function PageEditor() {
 
   const [title, setTitle] = useState('')
   const [isSaving, setIsSaving] = useState(false)
-  const editorRef = useRef<Editor | null>(null)
+  const [editor, setEditor] = useState<Editor | null>(null)
   const currentPageIdRef = useRef<string | null>(null)
   const isInitialLoadRef = useRef(false)
 
@@ -55,7 +55,7 @@ export function PageEditor() {
   }
 
   const handleMount = useCallback((editor: Editor) => {
-    editorRef.current = editor
+    setEditor(editor)
 
     const unsubscribe = editor.store.listen(
       (change) => {
@@ -78,12 +78,10 @@ export function PageEditor() {
 
   // Load page content when page selection changes
   useEffect(() => {
-    const editor = editorRef.current
     if (!editor || !currentPage) return
 
     // CRITICAL: Only reload if the page ID has changed (switching pages)
-    // or if we haven't loaded anything yet.
-    // Do NOT reload if only the 'content' changed in the store (which happens after every save).
+    // or if we haven't loaded anything yet for this editor instance.
     if (currentPageIdRef.current !== currentPage.id) {
       currentPageIdRef.current = currentPage.id
       isInitialLoadRef.current = true
@@ -94,7 +92,7 @@ export function PageEditor() {
           loadSnapshot(editor.store, snapshot)
         } catch (error) {
           console.error('PageEditor: Failed to load snapshot:', error)
-          // Fallback: clear only shapes if load fails
+          // Fallback: clear current shapes
           const shapeIds = Array.from(editor.getCurrentPageShapeIds())
           if (shapeIds.length > 0) editor.deleteShapes(shapeIds)
         }
@@ -104,13 +102,12 @@ export function PageEditor() {
         if (shapeIds.length > 0) editor.deleteShapes(shapeIds)
       }
       
-      // Delay disabling initial load protection to ensure tldraw's internal
-      // update cycle from loadSnapshot is complete.
+      // Delay disabling initial load protection
       setTimeout(() => {
         isInitialLoadRef.current = false
       }, 500)
     }
-  }, [currentPage?.id]) // ONLY depend on the ID, not the full object
+  }, [currentPage?.id, editor]) // Depend on editor instance too
 
   if (!currentPageId || !currentPage) {
     return (
@@ -124,16 +121,18 @@ export function PageEditor() {
     )
   }
 
-  if (isLoadingPage) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-background">
-        <div className="text-sm text-muted-foreground">Loading page...</div>
-      </div>
-    )
-  }
-
   return (
-    <div className="flex-1 flex flex-col bg-background overflow-hidden min-h-0">
+    <div className="flex-1 flex flex-col bg-background overflow-hidden min-h-0 relative">
+      {/* Loading Overlay */}
+      {isLoadingPage && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-sm">
+          <div className="bg-white p-4 rounded-lg shadow-lg border flex items-center gap-3">
+            <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
+            <span className="text-sm font-medium">Loading page...</span>
+          </div>
+        </div>
+      )}
+
       <div className="p-4 pb-0 flex items-center gap-2">
         <Input
           value={title}

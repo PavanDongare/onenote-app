@@ -20,6 +20,16 @@ import { useNotesStore } from '../lib/notes-store'
 import { usePanelStore } from '../lib/panel-store'
 import { updateSection } from '../lib/queries/sections'
 import { SortableSectionTab } from './sortable-section-tab'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 export function SectionsTabs() {
   const {
@@ -30,13 +40,16 @@ export function SectionsTabs() {
     createSection,
     loadSections,
     isLoadingSections,
-    reorderSections
+    reorderSections,
+    deleteSection
   } = useNotesStore()
   const { toggleSections } = usePanelStore()
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingTitle, setEditingTitle] = useState('')
   const [hoveredId, setHoveredId] = useState<string | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [sectionToDelete, setSectionToDelete] = useState<{ id: string; title: string } | null>(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -89,6 +102,24 @@ export function SectionsTabs() {
     }
   }
 
+  const handleDeleteClick = (id: string, title: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setSectionToDelete({ id, title })
+    setDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (sectionToDelete) {
+      try {
+        await deleteSection(sectionToDelete.id)
+        setDeleteDialogOpen(false)
+        setSectionToDelete(null)
+      } catch (error) {
+        console.error('Failed to delete section:', error)
+      }
+    }
+  }
+
   if (!currentNotebookId) {
     return (
       <div className="h-12 border-b flex items-center justify-center bg-muted/5">
@@ -125,6 +156,7 @@ export function SectionsTabs() {
                     isHovered={hoveredId === section.id}
                     onSelect={() => setCurrentSection(section.id)}
                     onStartEdit={(e) => handleStartEdit(section.id, section.title, e)}
+                    onDelete={(e) => handleDeleteClick(section.id, section.title, e)}
                     onSaveEdit={() => handleSaveEdit(section.id)}
                     onKeyDown={(e) => handleKeyDown(e, section.id)}
                     onTitleChange={setEditingTitle}
@@ -150,6 +182,27 @@ export function SectionsTabs() {
       >
         <ChevronsUpDown className="h-4 w-4" />
       </Button>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Section</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete &quot;{sectionToDelete?.title}&quot;?
+              This will also delete all pages within this section.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

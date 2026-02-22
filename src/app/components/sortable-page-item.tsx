@@ -3,7 +3,7 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Input } from '@/components/ui/input'
-import { GripVertical, Pencil } from 'lucide-react'
+import { GripVertical, Pencil, Trash2 } from 'lucide-react'
 import type { Page } from '../types'
 
 interface SortablePageItemProps {
@@ -14,6 +14,7 @@ interface SortablePageItemProps {
   isHovered: boolean
   onSelect: () => void
   onStartEdit: (e: React.MouseEvent) => void
+  onDelete: (e: React.MouseEvent) => void
   onSaveEdit: () => void
   onKeyDown: (e: React.KeyboardEvent) => void
   onTitleChange: (value: string) => void
@@ -28,6 +29,7 @@ export function SortablePageItem({
   isHovered,
   onSelect,
   onStartEdit,
+  onDelete,
   onSaveEdit,
   onKeyDown,
   onTitleChange,
@@ -90,12 +92,20 @@ export function SortablePageItem({
               {page.title || <span className="text-muted-foreground italic">Unnamed</span>}
             </span>
             {isHovered && (
-              <button
-                onClick={onStartEdit}
-                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-primary/10 rounded flex-shrink-0"
-              >
-                <Pencil className="w-3 h-3" />
-              </button>
+              <div className="flex items-center gap-0.5 ml-1">
+                <button
+                  onClick={onStartEdit}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-primary/10 rounded flex-shrink-0"
+                >
+                  <Pencil className="w-3 h-3" />
+                </button>
+                <button
+                  onClick={onDelete}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-destructive/10 rounded text-destructive flex-shrink-0"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </div>
             )}
           </>
         )}

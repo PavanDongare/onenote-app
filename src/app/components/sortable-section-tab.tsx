@@ -4,7 +4,7 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
-import { GripVertical, Pencil } from 'lucide-react'
+import { GripVertical, Pencil, Trash2 } from 'lucide-react'
 import type { Section } from '../types'
 
 interface SortableSectionTabProps {
@@ -15,6 +15,7 @@ interface SortableSectionTabProps {
   isHovered: boolean
   onSelect: () => void
   onStartEdit: (e: React.MouseEvent) => void
+  onDelete: (e: React.MouseEvent) => void
   onSaveEdit: () => void
   onKeyDown: (e: React.KeyboardEvent) => void
   onTitleChange: (value: string) => void
@@ -29,6 +30,7 @@ export function SortableSectionTab({
   isHovered,
   onSelect,
   onStartEdit,
+  onDelete,
   onSaveEdit,
   onKeyDown,
   onTitleChange,
@@ -89,12 +91,20 @@ export function SortableSectionTab({
             {section.title || <span className="text-muted-foreground italic">Unnamed</span>}
           </span>
           {isHovered && (
-            <button
-              onClick={onStartEdit}
-              className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-primary/10 rounded"
-            >
-              <Pencil className="w-3 h-3" />
-            </button>
+            <div className="flex items-center gap-0.5 ml-1">
+              <button
+                onClick={onStartEdit}
+                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-primary/10 rounded"
+              >
+                <Pencil className="w-3 h-3" />
+              </button>
+              <button
+                onClick={onDelete}
+                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-destructive/10 rounded text-destructive"
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
+            </div>
           )}
         </>
       )}

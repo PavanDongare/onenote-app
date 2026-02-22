@@ -19,6 +19,16 @@ import { PanelRightClose } from 'lucide-react'
 import { useNotesStore } from '../lib/notes-store'
 import { usePanelStore } from '../lib/panel-store'
 import { SortablePageItem } from './sortable-page-item'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 export function PagesPanel() {
   const {
@@ -29,13 +39,16 @@ export function PagesPanel() {
     createPage,
     isLoadingPages,
     updatePageTitle,
-    reorderPages
+    reorderPages,
+    deletePage
   } = useNotesStore()
   const { togglePages } = usePanelStore()
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingTitle, setEditingTitle] = useState('')
   const [hoveredId, setHoveredId] = useState<string | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [pageToDelete, setPageToDelete] = useState<{ id: string; title: string } | null>(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -84,6 +97,24 @@ export function PagesPanel() {
     else if (e.key === 'Escape') {
       setEditingId(null)
       setEditingTitle('')
+    }
+  }
+
+  const handleDeleteClick = (id: string, title: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setPageToDelete({ id, title })
+    setDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (pageToDelete) {
+      try {
+        await deletePage(pageToDelete.id)
+        setDeleteDialogOpen(false)
+        setPageToDelete(null)
+      } catch (error) {
+        console.error('Failed to delete page:', error)
+      }
     }
   }
 
@@ -152,6 +183,7 @@ export function PagesPanel() {
                     isHovered={hoveredId === page.id}
                     onSelect={() => setCurrentPage(page.id)}
                     onStartEdit={(e) => handleStartEdit(page.id, page.title, e)}
+                    onDelete={(e) => handleDeleteClick(page.id, page.title, e)}
                     onSaveEdit={() => handleSaveEdit(page.id)}
                     onKeyDown={(e) => handleKeyDown(e, page.id)}
                     onTitleChange={setEditingTitle}
@@ -169,6 +201,27 @@ export function PagesPanel() {
           + New Page
         </Button>
       </div>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Page</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete &quot;{pageToDelete?.title}&quot;?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -245,8 +245,10 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     await deleteNotebookQuery(id)
     await get().loadNotebooks()
     const { currentNotebookId, notebooks } = get()
+    
     if (currentNotebookId === id) {
       if (notebooks.length > 0) {
+        // Try to select the first one
         await get().setCurrentNotebook(notebooks[0].id)
       } else {
         set({
@@ -262,14 +264,22 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
   },
 
   deleteSection: async (id: string) => {
-    const { currentNotebookId } = get()
+    const { currentNotebookId, currentSectionId, sections } = get()
     if (!currentNotebookId) return
+    
+    // Find index of section being deleted to decide what to select next
+    const deletedIndex = sections.findIndex(s => s.id === id)
+    
     await deleteSectionQuery(id)
     await get().loadSections(currentNotebookId)
-    const { currentSectionId, sections } = get()
+    
+    const { sections: updatedSections } = get()
+    
     if (currentSectionId === id) {
-      if (sections.length > 0) {
-        await get().setCurrentSection(sections[0].id)
+      if (updatedSections.length > 0) {
+        // Select next section if available, otherwise previous
+        const nextIndex = Math.min(deletedIndex, updatedSections.length - 1)
+        await get().setCurrentSection(updatedSections[nextIndex].id)
       } else {
         set({ currentSectionId: null, pages: [], currentPageId: null, currentPage: null })
       }
@@ -277,14 +287,22 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
   },
 
   deletePage: async (id: string) => {
-    const { currentSectionId } = get()
+    const { currentSectionId, currentPageId, pages } = get()
     if (!currentSectionId) return
+    
+    // Find index of page being deleted
+    const deletedIndex = pages.findIndex(p => p.id === id)
+    
     await deletePageQuery(id)
     await get().loadPages(currentSectionId)
-    const { currentPageId, pages } = get()
+    
+    const { pages: updatedPages } = get()
+    
     if (currentPageId === id) {
-      if (pages.length > 0) {
-        await get().setCurrentPage(pages[0].id)
+      if (updatedPages.length > 0) {
+        // Select next page if available, otherwise previous
+        const nextIndex = Math.min(deletedIndex, updatedPages.length - 1)
+        await get().setCurrentPage(updatedPages[nextIndex].id)
       } else {
         set({ currentPageId: null, currentPage: null })
       }
