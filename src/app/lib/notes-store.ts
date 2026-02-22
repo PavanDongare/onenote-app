@@ -207,10 +207,16 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
   },
 
   updatePageContent: async (pageId: string, content: string) => {
-    await updatePageContentQuery(pageId, content)
-    const { currentPage } = get()
-    if (currentPage && currentPage.id === pageId) {
-      set({ currentPage: { ...currentPage, content } })
+    console.log('NotesStore: Updating page content for pageId:', pageId)
+    try {
+      await updatePageContentQuery(pageId, content)
+      const { currentPage } = get()
+      if (currentPage && currentPage.id === pageId) {
+        set({ currentPage: { ...currentPage, content } })
+        console.log('NotesStore: Local state updated for current page')
+      }
+    } catch (error) {
+      console.error('NotesStore: Failed to update page content:', error)
     }
   },
 

@@ -6,11 +6,10 @@ import { useNotesStore } from '../lib/notes-store'
 import { useDebouncedCallback } from 'use-debounce'
 import { Tldraw, getSnapshot, loadSnapshot } from 'tldraw'
 import type { Editor, TLEditorSnapshot } from 'tldraw'
-import { updatePageContent as savePageContentToDB } from '../lib/queries/pages'
 import 'tldraw/tldraw.css'
 
 export function PageEditor() {
-  const { currentPage, currentPageId, updatePageTitle, isLoadingPage } = useNotesStore()
+  const { currentPage, currentPageId, updatePageTitle, updatePageContent, isLoadingPage } = useNotesStore()
 
   const [title, setTitle] = useState('')
   const [isSaving, setIsSaving] = useState(false)
@@ -27,7 +26,7 @@ export function PageEditor() {
   const debouncedSave = useDebouncedCallback(async (pageId: string, data: string) => {
     setIsSaving(true)
     try {
-      await savePageContentToDB(pageId, data)
+      await updatePageContent(pageId, data)
     } catch (error) {
       console.error('Failed to save:', error)
     } finally {
@@ -52,21 +51,35 @@ export function PageEditor() {
   }
 
   const handleMount = useCallback((editor: Editor) => {
+    console.log('PageEditor: Editor mounted')
     editorRef.current = editor
 
     const unsubscribe = editor.store.listen(
-      () => {
-        if (isSavingRef.current) return
+      (change) => {
+        if (isSavingRef.current) {
+          console.log('PageEditor: Ignoring change because isSavingRef is true')
+          return
+        }
+        
+        // Check if the change actually came from a user action
+        if (change.source !== 'user') return
+
         const pageId = useNotesStore.getState().currentPageId
+        console.log('PageEditor: Store changed by user, pageId:', pageId)
+        
         if (pageId) {
           const snapshot = getSnapshot(editor.store)
+          console.log('PageEditor: Triggering debouncedSave for pageId:', pageId)
           debouncedSave(pageId, JSON.stringify(snapshot))
         }
       },
       { source: 'user', scope: 'document' }
     )
 
-    return () => unsubscribe()
+    return () => {
+      console.log('PageEditor: Editor unmounting, unsubscribing from store')
+      unsubscribe()
+    }
   }, [debouncedSave])
 
   // Load page content when currentPage changes
@@ -75,23 +88,37 @@ export function PageEditor() {
     if (!editor) return
 
     const page = currentPage
-    if (!page) return
+    if (!page) {
+      console.log('PageEditor: No current page')
+      return
+    }
 
     // Only reload if we're switching to a different page
-    if (currentPageIdRef.current !== page.id && page.content) {
+    if (currentPageIdRef.current !== page.id) {
+      console.log('PageEditor: Loading content for page', page.id, 'title:', page.title)
       currentPageIdRef.current = page.id
       isSavingRef.current = true
-      try {
-        const snapshot = JSON.parse(page.content) as TLEditorSnapshot
-        loadSnapshot(editor.store, snapshot)
-      } catch (error) {
-        console.error('Failed to load page content:', error)
-        // Clear editor on error
+      
+      if (page.content) {
+        try {
+          const snapshot = JSON.parse(page.content) as TLEditorSnapshot
+          console.log('PageEditor: Snapshot parsed, loading into editor')
+          loadSnapshot(editor.store, snapshot)
+        } catch (error) {
+          console.error('PageEditor: Failed to parse/load page content:', error)
+          editor.createShapes([])
+          editor.selectNone()
+        }
+      } else {
+        console.log('PageEditor: Page has no content, clearing editor')
+        editor.store.clear()
         editor.createShapes([])
         editor.selectNone()
       }
+      
       requestAnimationFrame(() => {
         isSavingRef.current = false
+        console.log('PageEditor: Loading complete, isSavingRef reset to false')
       })
     }
   }, [currentPage])
