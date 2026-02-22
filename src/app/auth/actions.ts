@@ -13,6 +13,13 @@ export async function signIn(formData: FormData) {
   const proto = headerList.get('x-forwarded-proto') || 'http'
   const origin = host ? `${proto}://${host}` : ''
 
+  console.log('--- Auth Debug ---')
+  console.log('Host:', host)
+  console.log('Proto:', proto)
+  console.log('Origin:', origin)
+  console.log('Redirect URL:', `${getURL(origin)}auth/callback`)
+  console.log('------------------')
+
   const email = formData.get('email') as string
 
   const { error } = await supabase.auth.signInWithOtp({
