@@ -37,7 +37,7 @@ export default function OneNotePage() {
 
   // Dynamic grid columns based on panel visibility
   const gridCols = cn(
-    'flex-1 grid overflow-hidden transition-all duration-200',
+    'flex-1 grid overflow-hidden transition-all duration-200 min-h-0',
     notebooksVisible && pagesVisible && 'grid-cols-[250px_1fr_250px]',
     notebooksVisible && !pagesVisible && 'grid-cols-[250px_1fr]',
     !notebooksVisible && pagesVisible && 'grid-cols-[1fr_250px]',

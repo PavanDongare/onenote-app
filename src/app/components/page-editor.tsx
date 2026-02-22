@@ -117,7 +117,7 @@ export function PageEditor() {
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-background overflow-hidden">
+    <div className="flex-1 flex flex-col bg-background overflow-hidden min-h-0">
       <div className="p-4 pb-0 flex items-center gap-2">
         <Input
           value={title}
