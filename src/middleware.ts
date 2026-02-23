@@ -4,15 +4,18 @@ import { updateSession } from '@/lib/supabase/middleware'
 export async function middleware(request: NextRequest) {
   const { supabaseResponse, user } = await updateSession(request)
 
-  // Protected paths require authentication
-  const isProtected = !request.nextUrl.pathname.startsWith('/auth')
-
-  if (isProtected && !user) {
-    const url = new URL('/auth/login', request.url)
-    url.searchParams.set('redirect', request.nextUrl.pathname)
-    return NextResponse.redirect(url)
-  }
-
+      // Protected paths require authentication
+      const isProtected = !request.nextUrl.pathname.startsWith('/auth')
+  
+      const hasAuthParams = 
+        request.nextUrl.searchParams.has('code') || 
+        request.nextUrl.searchParams.has('token_hash')
+  
+      if (isProtected && !user && !hasAuthParams) {
+        const url = new URL('/auth/login', request.url)
+        url.searchParams.set('redirect', request.nextUrl.pathname)
+        return NextResponse.redirect(url)
+      }
   return supabaseResponse
 }
 

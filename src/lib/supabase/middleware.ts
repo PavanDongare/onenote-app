@@ -32,5 +32,11 @@ export async function updateSession(request: NextRequest) {
   // Refresh session if expired - required for Server Components
   const { data: { user } } = await supabase.auth.getUser()
 
+  // If there's a code in the URL, exchange it for a session right here
+  const code = request.nextUrl.searchParams.get('code')
+  if (!user && code) {
+    await supabase.auth.exchangeCodeForSession(code)
+  }
+
   return { supabaseResponse, user }
 }
