@@ -111,7 +111,7 @@ export function PageEditor() {
 
   if (!currentPageId || !currentPage) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-background">
+      <div className="h-full flex items-center justify-center bg-background">
         <div className="text-center">
           <div className="mb-4 text-6xl">📝</div>
           <h3 className="text-lg font-semibold mb-2">No page selected</h3>
@@ -122,7 +122,7 @@ export function PageEditor() {
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-background overflow-hidden min-h-0 relative">
+    <div className="h-full flex flex-col bg-background overflow-hidden min-h-0 relative">
       {/* Loading Overlay */}
       {isLoadingPage && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-sm">

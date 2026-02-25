@@ -44,7 +44,7 @@ export default async function RootLayout({
         }}>
           <div className="flex flex-col h-screen overflow-hidden">
             {userContext && <UserNav email={userContext.email} />}
-            <main className="flex-1 overflow-hidden min-h-0">
+            <main className="flex-1 flex flex-col overflow-hidden min-h-0">
               {children}
             </main>
           </div>
